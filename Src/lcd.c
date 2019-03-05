@@ -1,0 +1,194 @@
+/*
+ * lcd.c
+ *
+ *  Created on: Mar 4, 2019
+ *      Author: Boning
+ */
+
+#include "spi.h"
+#include "main.h"
+#include "lcd.h"
+
+extern SPI_HandleTypeDef hspi5;
+
+uint8_t GRAM[LCD_WIDTH * LCD_HEIGHT] = {0};
+
+void LCD_GpioInit() {
+	MX_SPI5_Init();
+	// Enable Port Clock
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOD_CLK_ENABLE();
+	// Initialize NCS and DCX Port
+	GPIO_InitTypeDef Gpio_InitStruct;
+	Gpio_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	Gpio_InitStruct.Pull = GPIO_PULLUP;
+	Gpio_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+	Gpio_InitStruct.Pin = LCD_NCS_PIN;
+	HAL_GPIO_Init(LCD_NCS_GPIO, &Gpio_InitStruct);
+	Gpio_InitStruct.Pin = LCD_DCX_PIN;
+	HAL_GPIO_Init(LCD_DCX_GPIO, &Gpio_InitStruct);
+	// Initialize NCS and DCX value
+	HAL_GPIO_WritePin(LCD_NCS_GPIO, LCD_NCS_PIN, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LCD_DCX_GPIO, LCD_DCX_PIN, GPIO_PIN_SET);
+}
+
+void LCD_DispInit() {
+	//SOFTWARE RESET
+	LCD_WriteCommand(0x01);
+	HAL_Delay(1000);
+
+	//POWER CONTROL A
+	LCD_WriteCommand(0xCB);
+	LCD_WriteData(0x39);
+	LCD_WriteData(0x2C);
+	LCD_WriteData(0x00);
+	LCD_WriteData(0x34);
+	LCD_WriteData(0x02);
+
+	//POWER CONTROL B
+	LCD_WriteCommand(0xCF);
+	LCD_WriteData(0x00);
+	LCD_WriteData(0xC1);
+	LCD_WriteData(0x30);
+
+	//DRIVER TIMING CONTROL A
+	LCD_WriteCommand(0xE8);
+	LCD_WriteData(0x85);
+	LCD_WriteData(0x00);
+	LCD_WriteData(0x78);
+
+	//DRIVER TIMING CONTROL B
+	LCD_WriteCommand(0xEA);
+	LCD_WriteData(0x00);
+	LCD_WriteData(0x00);
+
+	//POWER ON SEQUENCE CONTROL
+	LCD_WriteCommand(0xED);
+	LCD_WriteData(0x64);
+	LCD_WriteData(0x03);
+	LCD_WriteData(0x12);
+	LCD_WriteData(0x81);
+
+	//PUMP RATIO CONTROL
+	LCD_WriteCommand(0xF7);
+	LCD_WriteData(0x20);
+
+	//POWER CONTROL,VRH[5:0]
+	LCD_WriteCommand(0xC0);
+	LCD_WriteData(0x23);
+
+	//POWER CONTROL,SAP[2:0];BT[3:0]
+	LCD_WriteCommand(0xC1);
+	LCD_WriteData(0x10);
+
+	//VCM CONTROL
+	LCD_WriteCommand(0xC5);
+	LCD_WriteData(0x3E);
+	LCD_WriteData(0x28);
+
+	//VCM CONTROL 2
+	LCD_WriteCommand(0xC7);
+	LCD_WriteData(0x86);
+
+	//MEMORY ACCESS CONTROL
+	LCD_WriteCommand(0x36);
+	LCD_WriteData(0x48);
+
+	//PIXEL FORMAT
+	LCD_WriteCommand(0x3A);
+	LCD_WriteData(0x55);
+
+	//FRAME RATIO CONTROL, STANDARD RGB COLOR
+	LCD_WriteCommand(0xB1);
+	LCD_WriteData(0x00);
+	LCD_WriteData(0x18);
+
+	//DISPLAY FUNCTION CONTROL
+	LCD_WriteCommand(0xB6);
+	LCD_WriteData(0x08);
+	LCD_WriteData(0x82);
+	LCD_WriteData(0x27);
+
+	//3GAMMA FUNCTION DISABLE
+	LCD_WriteCommand(0xF2);
+	LCD_WriteData(0x00);
+
+	//GAMMA CURVE SELECTED
+	LCD_WriteCommand(0x26);
+	LCD_WriteData(0x01);
+
+	//POSITIVE GAMMA CORRECTION
+	LCD_WriteCommand(0xE0);
+	LCD_WriteData(0x0F);
+	LCD_WriteData(0x31);
+	LCD_WriteData(0x2B);
+	LCD_WriteData(0x0C);
+	LCD_WriteData(0x0E);
+	LCD_WriteData(0x08);
+	LCD_WriteData(0x4E);
+	LCD_WriteData(0xF1);
+	LCD_WriteData(0x37);
+	LCD_WriteData(0x07);
+	LCD_WriteData(0x10);
+	LCD_WriteData(0x03);
+	LCD_WriteData(0x0E);
+	LCD_WriteData(0x09);
+	LCD_WriteData(0x00);
+
+	//NEGATIVE GAMMA CORRECTION
+	LCD_WriteCommand(0xE1);
+	LCD_WriteData(0x00);
+	LCD_WriteData(0x0E);
+	LCD_WriteData(0x14);
+	LCD_WriteData(0x03);
+	LCD_WriteData(0x11);
+	LCD_WriteData(0x07);
+	LCD_WriteData(0x31);
+	LCD_WriteData(0xC1);
+	LCD_WriteData(0x48);
+	LCD_WriteData(0x08);
+	LCD_WriteData(0x0F);
+	LCD_WriteData(0x0C);
+	LCD_WriteData(0x31);
+	LCD_WriteData(0x36);
+	LCD_WriteData(0x0F);
+
+	//EXIT SLEEP
+	LCD_WriteCommand(0x11);
+	HAL_Delay(120);
+
+	//TURN ON DISPLAY
+	LCD_WriteCommand(0x29);
+}
+
+void LCD_ChipSelect(CsMode state){
+	HAL_GPIO_WritePin(LCD_NCS_GPIO, LCD_NCS_PIN, state);
+}
+
+void LCD_ModeSelect(DcMode mode){
+	HAL_GPIO_WritePin(LCD_DCX_GPIO, LCD_DCX_PIN, mode);
+}
+
+void LCD_WriteCommand(uint8_t data) {
+	HAL_GPIO_WritePin(LCD_NCS_GPIO, LCD_NCS_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LCD_DCX_GPIO, LCD_DCX_PIN, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi5, &data, 1, 1);
+	while(!((hspi5.Instance->SR) & SPI_SR_TXE));
+	HAL_GPIO_WritePin(LCD_NCS_GPIO, LCD_NCS_PIN, GPIO_PIN_SET);
+}
+
+void LCD_WriteData(uint8_t data) {
+	HAL_GPIO_WritePin(LCD_NCS_GPIO, LCD_NCS_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LCD_DCX_GPIO, LCD_DCX_PIN, GPIO_PIN_SET);
+	HAL_SPI_Transmit(&hspi5, &data, 1, 10);
+	while(!((hspi5.Instance->SR) & SPI_SR_TXE));
+	HAL_GPIO_WritePin(LCD_NCS_GPIO, LCD_NCS_PIN, GPIO_PIN_SET);
+}
+
+void LCD_WriteBulkData(uint8_t *data, uint8_t size) {
+	HAL_GPIO_WritePin(LCD_NCS_GPIO, LCD_NCS_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LCD_DCX_GPIO, LCD_DCX_PIN, GPIO_PIN_SET);
+	HAL_SPI_Transmit(&hspi5, data, 2, 10);
+	while(!((hspi5.Instance->SR) & SPI_SR_TXE));
+	HAL_GPIO_WritePin(LCD_NCS_GPIO, LCD_NCS_PIN, GPIO_PIN_SET);
+}
