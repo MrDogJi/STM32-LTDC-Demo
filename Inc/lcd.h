@@ -27,13 +27,14 @@ typedef enum {
 } DcMode;
 
 void LCD_GpioInit();
-void LCD_DispInit();
+void LCD_LtdcInit();
+void LCD_DispInit_Spi();
+void LCD_DispInit_Ltdc();
 void LCD_ChipSelect(CsMode state);
 void LCD_ModeSelect(DcMode mode);
 void LCD_WriteCommand(uint8_t data);
 void LCD_WriteData(uint8_t data);
 void LCD_WriteBulkData(uint8_t *data, uint8_t size);
-
-void LCD_InitPorts();
+void LCD_WriteGRAM(uint8_t data, uint32_t addr);
 
 #endif /* LCD_H_ */

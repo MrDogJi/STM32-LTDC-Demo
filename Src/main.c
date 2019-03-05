@@ -6,25 +6,44 @@
 #include "lcd.h"
 #include "graphic.h"
 
+
 void SystemClock_Config(void);
+
+extern uint8_t *GRAM;
 
 int main(void)
 {
   HAL_Init();
   SystemClock_Config();
   MX_GPIO_Init();
-  //MX_LTDC_Init();
-  //MX_SPI5_Init();
   LCD_GpioInit();
-  LCD_DispInit();
+  LCD_LtdcInit();
+  LCD_DispInit_Spi();
+  LCD_DispInit_Ltdc();
+
   while (1)
   {
-	  LCD_SetColor(0x2E5A);
-	  LCD_DrawRect_Spi(100, 10, 120, 30);
-	  HAL_Delay(1);
-	  LCD_SetColor(0xDE04);
-	  LCD_DrawRect_Spi(100, 10, 120, 30);
-	  HAL_Delay(1);
+	  LCD_SetColorLtdc(0x2c);
+	  LCD_DrawRect_Ltdc(10, 10, 50, 50);
+
+	  LCD_SetColorLtdc(0x16);
+	  LCD_DrawRect_Ltdc(10, 70, 50, 120);
+
+	  LCD_SetColorLtdc(0x2a);
+	  LCD_DrawRect_Ltdc(10, 130, 50, 180);
+
+	  HAL_Delay(1000);
+
+	  LCD_SetColorLtdc(0x15);
+	  LCD_DrawRect_Ltdc(10, 10, 50, 50);
+
+	  LCD_SetColorLtdc(0x2b);
+	  LCD_DrawRect_Ltdc(10, 70, 50, 120);
+
+	  LCD_SetColorLtdc(0x20);
+	  LCD_DrawRect_Ltdc(10, 130, 50, 180);
+
+	  HAL_Delay(1000);
   }
 }
 

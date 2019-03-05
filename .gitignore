@@ -2,6 +2,7 @@
 .cproject
 .mxproject
 .project
+Debug
 *.launch
 *.ioc
 *.ld

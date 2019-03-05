@@ -1,3 +1,0 @@
-graphic.c:15:6:LCD_SetDrawAddr	24	static
-graphic.c:32:6:LCD_SetColor	0	static
-graphic.c:36:6:LCD_DrawRect_Spi	32	static
