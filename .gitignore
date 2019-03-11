@@ -6,3 +6,6 @@ Debug
 *.launch
 *.ioc
 *.ld
+Src/Backup
+Inc/Backup
+.code_review_properties
